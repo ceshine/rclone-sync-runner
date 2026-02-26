@@ -1,7 +1,7 @@
 [project]
 name = "rclone-batch-job-runner"
 version = "0.1.0"
-description = "Add your description here"
+description = "Run batch rclone sync jobs from YAML configuration"
 requires-python = ">=3.13"
 dependencies = [
     "orjson>=3.11.7",
@@ -11,8 +11,16 @@ dependencies = [
     "typer>=0.24.1",
 ]
 
+[project.scripts]
+rclone-sync-runner = "rclone_sync_runner.cli:main"
+
 [dependency-groups]
 dev = [
     "basedpyright>=1.38.2",
+    "pytest>=8.4.2",
+    "pytest-env>=1.5.0",
     "ruff>=0.15.2",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
