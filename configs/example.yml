@@ -1,0 +1,26 @@
+version: 1
+
+global:
+  # Path/name of the rclone binary to execute.
+  rclone_bin: rclone
+  # One of: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  log_level: INFO
+  # Continue running remaining jobs if one job fails.
+  continue_on_error: true
+
+jobs:
+  - name: photos-to-backblaze
+    source: /srv/data/photos
+    destination: b2:home-archive/photos
+    extra_args:
+      - --fast-list
+      - --transfers=8
+      - --checkers=16
+      - --delete-during
+
+  - name: documents-to-onedrive
+    source: /srv/data/documents
+    destination: onedrive:backup/documents
+    extra_args:
+      - --exclude=**/.DS_Store
+      - --exclude=**/tmp/**
