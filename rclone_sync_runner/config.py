@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from rclone_sync_runner.models import RunnerConfig
+from .models import RunnerConfig
 
 
 class ConfigError(RuntimeError):

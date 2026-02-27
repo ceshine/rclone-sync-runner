@@ -9,23 +9,39 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from rclone_sync_runner.config import ConfigError, load_config
-from rclone_sync_runner.logging_setup import setup_logging
-from rclone_sync_runner.models import RunSummary
-from rclone_sync_runner.notifiers.logging_notifier import LoggingNotifier
-from rclone_sync_runner.runner import run_jobs
+from .runner import run_jobs
+from .models import RunSummary
+from .config import ConfigError, load_config
+from .logging_setup import setup_logging
+from .notifiers.logging_notifier import LoggingNotifier
 
-app = typer.Typer(help="Run sequential rclone sync jobs from YAML configuration.")
+
 LOGGER = logging.getLogger(__name__)
+TYPER_APP = typer.Typer(help="Run sequential rclone sync jobs from YAML configuration.")
 
 
 def _render_summary(summary: RunSummary) -> None:
     """Render a run summary table using Rich."""
+
+    def _stats_value(last_stats: dict[str, object] | None, key: str) -> str:
+        """Get a numeric stats value from last_stats with a safe fallback."""
+        if not last_stats:
+            return "0"
+
+        value = last_stats.get(key)
+        if isinstance(value, bool):
+            return "0"
+        if isinstance(value, int | float):
+            return str(int(value))
+        return "0"
+
     console = Console()
     table = Table(title="rclone-sync-runner summary")
     table.add_column("Job")
-    table.add_column("Source")
-    table.add_column("Destination")
+    table.add_column("Transfers")
+    table.add_column("Deletes")
+    table.add_column("Checks")
+    table.add_column("Bytes")
     table.add_column("Status")
     table.add_column("Return Code")
     table.add_column("Duration (s)")
@@ -35,8 +51,10 @@ def _render_summary(summary: RunSummary) -> None:
         status = "OK" if result.succeeded else "FAILED"
         table.add_row(
             result.job_name,
-            result.source,
-            result.destination,
+            _stats_value(result.last_stats, "transfers"),
+            _stats_value(result.last_stats, "deletes"),
+            _stats_value(result.last_stats, "checks"),
+            _stats_value(result.last_stats, "bytes"),
             status,
             str(result.return_code),
             f"{result.duration_seconds:.2f}",
@@ -55,7 +73,7 @@ def _render_summary(summary: RunSummary) -> None:
     )
 
 
-@app.command()
+@TYPER_APP.command()
 def run(
     config: Path = typer.Option(
         ...,
@@ -92,7 +110,7 @@ def run(
 
 def main() -> None:
     """Console script wrapper."""
-    app()
+    TYPER_APP()
 
 
 if __name__ == "__main__":

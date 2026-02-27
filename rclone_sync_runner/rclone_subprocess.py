@@ -10,7 +10,7 @@ from typing import Any
 import orjson
 from pydantic import BaseModel
 
-from rclone_sync_runner.models import GlobalConfig, JobRunResult, SyncJob
+from .models import GlobalConfig, JobRunResult, SyncJob
 
 LOGGER = logging.getLogger(__name__)
 
