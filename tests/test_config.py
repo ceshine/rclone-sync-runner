@@ -113,3 +113,24 @@ jobs:
 
     with pytest.raises(ConfigError, match="extra_args"):
         load_config(config_path)
+
+
+@pytest.mark.parametrize("dry_run_arg", ["-n", "--dry-run", "--dry-run=true"])
+def test_load_config_rejects_dry_run_flags_in_extra_args(tmp_path: Path, dry_run_arg: str) -> None:
+    config_path = _write_config(
+        tmp_path / "invalid_dry_run_extra_args.yaml",
+        f"""
+version: 1
+global:
+  log_level: INFO
+jobs:
+  - name: docs
+    source: /data/docs
+    destination: remote:docs
+    extra_args:
+      - {dry_run_arg}
+""",
+    )
+
+    with pytest.raises(ConfigError, match="Do not set '-n' or '--dry-run'"):
+        load_config(config_path)

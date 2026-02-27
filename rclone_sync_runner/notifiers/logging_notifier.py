@@ -19,7 +19,8 @@ class LoggingNotifier:
             summary: Run summary object.
         """
         LOGGER.info(
-            "Run finished: total=%s succeeded=%s failed=%s duration=%.2fs",
+            "Run finished: mode=%s total=%s succeeded=%s failed=%s duration=%.2fs",
+            "dry-run" if summary.dry_run else "live",
             summary.total_jobs,
             summary.successful_jobs,
             summary.failed_jobs,

@@ -13,12 +13,17 @@ from rclone_sync_runner.rclone_subprocess import execute_sync_job
 LOGGER = logging.getLogger(__name__)
 
 
-def run_jobs(config: RunnerConfig, notifiers: Sequence[Notifier] | None = None) -> tuple[RunSummary, int]:
+def run_jobs(
+    config: RunnerConfig,
+    notifiers: Sequence[Notifier] | None = None,
+    dry_run: bool = False,
+) -> tuple[RunSummary, int]:
     """Execute jobs sequentially and produce a run summary.
 
     Args:
         config: Validated runner config.
         notifiers: Optional notifier hooks called on run completion.
+        dry_run: Whether to run all jobs in rclone dry-run mode.
 
     Returns:
         A tuple of run summary and process exit code.
@@ -27,7 +32,7 @@ def run_jobs(config: RunnerConfig, notifiers: Sequence[Notifier] | None = None) 
     results: list[JobRunResult] = []
 
     for job in config.jobs:
-        result = execute_sync_job(job=job, global_config=config.global_config)
+        result = execute_sync_job(job=job, global_config=config.global_config, dry_run=dry_run)
         results.append(result)
 
         if not result.succeeded and not config.global_config.continue_on_error:
@@ -44,6 +49,7 @@ def run_jobs(config: RunnerConfig, notifiers: Sequence[Notifier] | None = None) 
         successful_jobs=successful_jobs,
         failed_jobs=failed_jobs,
         duration_seconds=duration_seconds,
+        dry_run=dry_run,
         results=results,
     )
 

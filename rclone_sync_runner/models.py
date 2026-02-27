@@ -53,6 +53,19 @@ class RunnerConfig(BaseModel):
             duplicates = ", ".join(sorted(duplicate_names))
             raise ValueError(f"Duplicate job names are not allowed: {duplicates}")
 
+        jobs_with_disallowed_flags: set[str] = set()
+        for job in self.jobs:
+            if any(arg == "-n" or arg.startswith("--dry-run") for arg in job.extra_args):
+                jobs_with_disallowed_flags.add(job.name)
+
+        if jobs_with_disallowed_flags:
+            job_names = ", ".join(sorted(jobs_with_disallowed_flags))
+            raise ValueError(
+                "Do not set '-n' or '--dry-run' in job extra_args. "
+                "Use the CLI '--dry-run/-n' option instead. "
+                f"Jobs: {job_names}"
+            )
+
         return self
 
 
@@ -67,6 +80,7 @@ class JobRunResult(BaseModel):
     duration_seconds: float
     return_code: int
     succeeded: bool
+    dry_run: bool
     error_count: int
     error_samples: list[str]
     last_stats: dict[str, Any] | None = None
@@ -79,4 +93,5 @@ class RunSummary(BaseModel):
     successful_jobs: int
     failed_jobs: int
     duration_seconds: float
+    dry_run: bool
     results: list[JobRunResult]

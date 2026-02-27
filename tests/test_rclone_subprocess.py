@@ -28,6 +28,20 @@ def test_build_rclone_sync_command_includes_required_flags() -> None:
     assert command[-1] == "--fast-list"
 
 
+def test_build_rclone_sync_command_includes_dry_run_flag_when_enabled() -> None:
+    job = SyncJob(
+        name="docs",
+        source="/src/docs",
+        destination="remote:docs",
+        extra_args=[],
+    )
+    global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO")
+
+    command = build_rclone_sync_command(job=job, global_config=global_config, dry_run=True)
+
+    assert command[-1] == "--dry-run"
+
+
 def test_parse_rclone_stderr_line_extracts_stats() -> None:
     line = (
         '{"level":"info","msg":"Transferred","stats":{"bytes":1024,"checks":5},'
@@ -92,10 +106,11 @@ def test_execute_sync_job_collects_error_samples_and_stats(monkeypatch) -> None:
 
     monkeypatch.setattr("rclone_sync_runner.rclone_subprocess.subprocess.Popen", fake_popen)
 
-    result = execute_sync_job(job=job, global_config=global_config)
+    result = execute_sync_job(job=job, global_config=global_config, dry_run=True)
 
     assert result.succeeded is False
     assert result.return_code == 1
+    assert result.dry_run is True
     assert result.error_count == 1
     assert result.error_samples == ["copy failed"]
     assert result.last_stats == {"bytes": 12}

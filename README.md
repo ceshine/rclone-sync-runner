@@ -51,6 +51,14 @@ Refer to [configs/example.yml](configs/example.yml) for a more complete example.
 uv run rclone-sync-runner run --config configs/sync.yaml
 ```
 
+Preview without making remote changes:
+
+```bash
+uv run rclone-sync-runner run --config configs/sync.yaml --dry-run
+```
+
+`--dry-run` (or `-n`) must be set at the CLI level and is rejected in per-job `extra_args`.
+
 The CLI prints a summary table and exits with:
 
 - `0` when all jobs succeed

@@ -26,12 +26,13 @@ class ParsedLogLine(BaseModel):
     raw_line: str
 
 
-def build_rclone_sync_command(job: SyncJob, global_config: GlobalConfig) -> list[str]:
+def build_rclone_sync_command(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> list[str]:
     """Build an rclone sync command for a job.
 
     Args:
         job: Job definition.
         global_config: Global config values.
+        dry_run: Whether to append rclone dry-run mode.
 
     Returns:
         Command argument list for subprocess execution.
@@ -50,6 +51,8 @@ def build_rclone_sync_command(job: SyncJob, global_config: GlobalConfig) -> list
         "INFO",
     ]
     command.extend(job.extra_args)
+    if dry_run:
+        command.append("--dry-run")
     return command
 
 
@@ -94,12 +97,13 @@ def parse_rclone_stderr_line(line: str) -> ParsedLogLine:
     )
 
 
-def execute_sync_job(job: SyncJob, global_config: GlobalConfig) -> JobRunResult:
+def execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
     """Execute one sync job and collect structured results.
 
     Args:
         job: Job definition.
         global_config: Global config values.
+        dry_run: Whether to run the job with rclone dry-run enabled.
 
     Returns:
         Job execution result.
@@ -108,7 +112,7 @@ def execute_sync_job(job: SyncJob, global_config: GlobalConfig) -> JobRunResult:
         RuntimeError: If subprocess could not be started.
     """
     started_at = datetime.now(UTC)
-    command = build_rclone_sync_command(job=job, global_config=global_config)
+    command = build_rclone_sync_command(job=job, global_config=global_config, dry_run=dry_run)
 
     LOGGER.info(
         "Starting job '%s' from '%s' to '%s'",
@@ -180,6 +184,7 @@ def execute_sync_job(job: SyncJob, global_config: GlobalConfig) -> JobRunResult:
         duration_seconds=duration_seconds,
         return_code=return_code,
         succeeded=succeeded,
+        dry_run=dry_run,
         error_count=error_count,
         error_samples=error_samples,
         last_stats=last_stats,

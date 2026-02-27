@@ -65,6 +65,7 @@ def _render_summary(summary: RunSummary) -> None:
     console.print(
         (
             "Run totals: "
+            f"mode={'dry-run' if summary.dry_run else 'live'} "
             f"total={summary.total_jobs} "
             f"succeeded={summary.successful_jobs} "
             f"failed={summary.failed_jobs} "
@@ -86,6 +87,12 @@ def run(
         readable=True,
         resolve_path=True,
     ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-n",
+        help="Preview operations without making changes.",
+    ),
 ) -> None:
     """Execute all configured jobs sequentially."""
     setup_logging("INFO")
@@ -97,9 +104,11 @@ def run(
         raise typer.Exit(code=2) from error
 
     setup_logging(parsed_config.global_config.log_level)
+    if dry_run:
+        LOGGER.info("Running in dry-run mode; no changes will be applied.")
 
     try:
-        summary, exit_code = run_jobs(config=parsed_config, notifiers=[LoggingNotifier()])
+        summary, exit_code = run_jobs(config=parsed_config, notifiers=[LoggingNotifier()], dry_run=dry_run)
     except Exception:
         LOGGER.exception("Unexpected runtime orchestration failure")
         raise typer.Exit(code=2) from None
