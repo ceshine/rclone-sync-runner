@@ -36,15 +36,19 @@ def _render_summary(summary: RunSummary) -> None:
         return "0"
 
     console = Console()
+    # Ensure a minimum width for the summary, especially for systemd logs
+    if console.width < 120:
+        console = Console(width=120)
+
     table = Table(title="rclone-sync-runner summary")
-    table.add_column("Job")
+    table.add_column("Job", min_width=25)
     table.add_column("Transfers")
     table.add_column("Deletes")
     table.add_column("Checks")
     table.add_column("Bytes")
     table.add_column("Status")
-    table.add_column("Return Code")
-    table.add_column("Duration (s)")
+    table.add_column("Ret Code")
+    table.add_column("Duration(s)")
     table.add_column("Errors")
 
     for result in summary.results:
