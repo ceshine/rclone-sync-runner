@@ -1,6 +1,8 @@
 version: 1
 
 global:
+  # Optional runner identifier used in logs/notifications.
+  name: home-backup-runner
   # Path/name of the rclone binary to execute.
   rclone_bin: rclone
   # One of: DEBUG, INFO, WARNING, ERROR, CRITICAL

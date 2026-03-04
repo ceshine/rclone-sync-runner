@@ -41,6 +41,7 @@ def _config(continue_on_error: bool) -> RunnerConfig:
         {
             "version": 1,
             "global": {
+                "name": "local-runner",
                 "rclone_bin": "rclone",
                 "log_level": "INFO",
                 "continue_on_error": continue_on_error,
@@ -72,6 +73,7 @@ def test_run_jobs_returns_zero_when_all_success(monkeypatch) -> None:
     assert summary.successful_jobs == 3
     assert summary.failed_jobs == 0
     assert summary.dry_run is False
+    assert summary.global_name == "local-runner"
 
 
 def test_run_jobs_returns_one_when_any_failure(monkeypatch) -> None:
@@ -142,6 +144,7 @@ def test_run_jobs_calls_notifier(monkeypatch) -> None:
     assert notifier.last_summary is not None
     assert notifier.last_summary.total_jobs == 3
     assert notifier.last_summary.dry_run is False
+    assert notifier.last_summary.global_name == "local-runner"
 
 
 def test_run_jobs_sets_summary_dry_run_when_enabled(monkeypatch) -> None:

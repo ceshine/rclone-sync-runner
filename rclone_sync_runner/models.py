@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class GlobalConfig(BaseModel):
     """Global settings that apply to all sync jobs."""
 
+    name: str | None = None
     rclone_bin: str = "rclone"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     continue_on_error: bool = True
@@ -107,6 +108,7 @@ class JobRunResult(BaseModel):
 class RunSummary(BaseModel):
     """Overall run summary."""
 
+    global_name: str | None = None
     total_jobs: int
     successful_jobs: int
     failed_jobs: int

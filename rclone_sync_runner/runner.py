@@ -45,6 +45,7 @@ def run_jobs(
     failed_jobs = len(results) - successful_jobs
 
     summary = RunSummary(
+        global_name=config.global_config.name,
         total_jobs=len(results),
         successful_jobs=successful_jobs,
         failed_jobs=failed_jobs,
