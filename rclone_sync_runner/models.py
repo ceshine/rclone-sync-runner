@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 class GlobalConfig(BaseModel):
     """Global settings that apply to all sync jobs."""
 
+    name: str | None = None
     rclone_bin: str = "rclone"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     continue_on_error: bool = True
@@ -25,6 +26,21 @@ class SyncJob(BaseModel):
     extra_args: list[str] = Field(default_factory=list)
 
 
+class TelegramNotificationConfig(BaseModel):
+    """Telegram notification channel settings."""
+
+    bot_token: str = Field(min_length=1)
+    chat_id: str = Field(min_length=1)
+    message_thread_id: int | None = None
+    disable_notification: bool = False
+
+
+class NotificationChannelsConfig(BaseModel):
+    """Optional notification channel configuration."""
+
+    telegram: TelegramNotificationConfig | None = None
+
+
 class RunnerConfig(BaseModel):
     """Full validated runner configuration."""
 
@@ -33,6 +49,7 @@ class RunnerConfig(BaseModel):
     version: int
     global_config: GlobalConfig = Field(alias="global")
     jobs: list[SyncJob]
+    notifications: NotificationChannelsConfig = Field(default_factory=NotificationChannelsConfig)
 
     @model_validator(mode="after")
     def validate_mvp_constraints(self) -> RunnerConfig:
@@ -61,9 +78,11 @@ class RunnerConfig(BaseModel):
         if jobs_with_disallowed_flags:
             job_names = ", ".join(sorted(jobs_with_disallowed_flags))
             raise ValueError(
-                "Do not set '-n' or '--dry-run' in job extra_args. "
-                "Use the CLI '--dry-run/-n' option instead. "
-                f"Jobs: {job_names}"
+                (
+                    "Do not set '-n' or '--dry-run' in job extra_args. "
+                    "Use the CLI '--dry-run/-n' option instead. "
+                    f"Jobs: {job_names}"
+                )
             )
 
         return self
@@ -89,6 +108,7 @@ class JobRunResult(BaseModel):
 class RunSummary(BaseModel):
     """Overall run summary."""
 
+    global_name: str | None = None
     total_jobs: int
     successful_jobs: int
     failed_jobs: int

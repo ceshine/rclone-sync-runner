@@ -9,15 +9,33 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .runner import run_jobs
-from .models import RunSummary
 from .config import ConfigError, load_config
 from .logging_setup import setup_logging
-from .notifiers.logging_notifier import LoggingNotifier
+from .models import RunSummary, RunnerConfig
+from .notifiers import LoggingNotifier, Notifier, TelegramNotifier
+from .runner import run_jobs
 
 
 LOGGER = logging.getLogger(__name__)
 TYPER_APP = typer.Typer(help="Run sequential rclone sync jobs from YAML configuration.")
+
+
+def _build_notifiers(config: RunnerConfig) -> list[Notifier]:
+    """Build notifier instances from validated config."""
+    notifiers: list[Notifier] = [LoggingNotifier()]
+
+    telegram_config = config.notifications.telegram
+    if telegram_config is not None:
+        notifiers.append(
+            TelegramNotifier(
+                bot_token=telegram_config.bot_token,
+                chat_id=telegram_config.chat_id,
+                message_thread_id=telegram_config.message_thread_id,
+                disable_notification=telegram_config.disable_notification,
+            )
+        )
+
+    return notifiers
 
 
 def _render_summary(summary: RunSummary) -> None:
@@ -112,7 +130,7 @@ def run(
         LOGGER.info("Running in dry-run mode; no changes will be applied.")
 
     try:
-        summary, exit_code = run_jobs(config=parsed_config, notifiers=[LoggingNotifier()], dry_run=dry_run)
+        summary, exit_code = run_jobs(config=parsed_config, notifiers=_build_notifiers(parsed_config), dry_run=dry_run)
     except Exception:
         LOGGER.exception("Unexpected runtime orchestration failure")
         raise typer.Exit(code=2) from None

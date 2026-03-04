@@ -1,12 +1,23 @@
 version: 1
 
 global:
+  # Optional runner identifier used in logs/notifications.
+  name: home-backup-runner
   # Path/name of the rclone binary to execute.
   rclone_bin: rclone
   # One of: DEBUG, INFO, WARNING, ERROR, CRITICAL
   log_level: INFO
   # Continue running remaining jobs if one job fails.
   continue_on_error: true
+
+notifications:
+  # Optional Telegram notification after each run.
+  telegram:
+    bot_token: "123456789:replace_with_real_token"
+    chat_id: "-1001234567890"
+    # Optional topic/thread ID for forum-enabled groups.
+    # message_thread_id: 42
+    disable_notification: false
 
 jobs:
   - name: photos-to-backblaze

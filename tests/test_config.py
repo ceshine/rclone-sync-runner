@@ -115,6 +115,57 @@ jobs:
         load_config(config_path)
 
 
+def test_load_config_accepts_telegram_notifications(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path / "telegram_notifications.yaml",
+        """
+version: 1
+global:
+  log_level: INFO
+jobs:
+  - name: docs
+    source: /data/docs
+    destination: remote:docs
+notifications:
+  telegram:
+    bot_token: "12345:ABCDEF"
+    chat_id: "-10012345"
+    message_thread_id: 42
+    disable_notification: true
+""",
+    )
+
+    config = load_config(config_path)
+
+    assert config.notifications.telegram is not None
+    assert config.notifications.telegram.bot_token == "12345:ABCDEF"
+    assert config.notifications.telegram.chat_id == "-10012345"
+    assert config.notifications.telegram.message_thread_id == 42
+    assert config.notifications.telegram.disable_notification is True
+
+
+def test_load_config_rejects_empty_telegram_token(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path / "invalid_telegram_notifications.yaml",
+        """
+version: 1
+global:
+  log_level: INFO
+jobs:
+  - name: docs
+    source: /data/docs
+    destination: remote:docs
+notifications:
+  telegram:
+    bot_token: ""
+    chat_id: "-10012345"
+""",
+    )
+
+    with pytest.raises(ConfigError, match="bot_token"):
+        load_config(config_path)
+
+
 @pytest.mark.parametrize("dry_run_arg", ["-n", "--dry-run", "--dry-run=true"])
 def test_load_config_rejects_dry_run_flags_in_extra_args(tmp_path: Path, dry_run_arg: str) -> None:
     config_path = _write_config(
