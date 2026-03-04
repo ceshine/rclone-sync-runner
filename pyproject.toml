@@ -34,3 +34,7 @@ build-backend = "hatchling.build"
 packages = [
     "rclone_sync_runner",
 ]
+
+[tool.ruff]
+line-length = 120
+target-version = "py313"
