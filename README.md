@@ -112,6 +112,7 @@ Options:
 |------|-------|---------|-------------|
 | `--config` | `-c` | *(required)* | Path to the YAML config file |
 | `--dry-run` | `-n` | `false` | Pass `--dry-run` to rclone without writing any changes |
+| `--progress` | `-p` | `false` | Print live stats updates (speed, ETA, transfer progress) during each job |
 
 `--dry-run` must be set at the CLI level and is rejected in both `global.extra_args` and per-job `extra_args`.
 

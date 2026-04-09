@@ -5,12 +5,12 @@ from __future__ import annotations
 import logging
 import subprocess
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Callable
 
 import orjson
 from pydantic import BaseModel
 
-from .models import GlobalConfig, JobRunResult, SyncJob
+from .models import SyncJob, GlobalConfig, JobRunResult
 
 LOGGER = logging.getLogger(__name__)
 
@@ -98,13 +98,20 @@ def parse_rclone_stderr_line(line: str) -> ParsedLogLine:
     )
 
 
-def execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
+def execute_sync_job(
+    job: SyncJob,
+    global_config: GlobalConfig,
+    dry_run: bool = False,
+    on_stats: Callable[[str, dict[str, Any]], None] | None = None,
+) -> JobRunResult:
     """Execute one sync job and collect structured results.
 
     Args:
         job (SyncJob): Job definition.
         global_config (GlobalConfig): Global config values.
         dry_run (bool): Whether to run the job with rclone dry-run enabled.
+        on_stats (Callable[[str, dict[str, Any]], None] | None): Optional callback
+            invoked on each rclone stats update, receiving ``(job_name, stats_dict)``.
 
     Returns:
         JobRunResult: Job execution result.
@@ -153,7 +160,9 @@ def execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = 
 
         if parsed_line.stats is not None:
             last_stats = parsed_line.stats
-            LOGGER.info("Job '%s' stats update: %s", job.name, parsed_line.stats)
+            LOGGER.debug("Job '%s' stats update: %s", job.name, parsed_line.stats)
+            if on_stats is not None:
+                on_stats(job.name, parsed_line.stats)
 
         if parsed_line.error_message:
             error_count += 1

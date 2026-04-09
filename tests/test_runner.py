@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 
-from rclone_sync_runner.models import GlobalConfig, JobRunResult, RunSummary, RunnerConfig, SyncJob
+from rclone_sync_runner.models import SyncJob, RunSummary, GlobalConfig, JobRunResult, RunnerConfig
 from rclone_sync_runner.runner import run_jobs
 
 
@@ -58,7 +58,9 @@ def _config(continue_on_error: bool) -> RunnerConfig:
 def test_run_jobs_returns_zero_when_all_success(monkeypatch) -> None:
     config = _config(continue_on_error=True)
 
-    def fake_execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
+    def fake_execute_sync_job(
+        job: SyncJob, global_config: GlobalConfig, dry_run: bool = False, on_stats=None
+    ) -> JobRunResult:
         del global_config
         result = _result(job.name, succeeded=True, return_code=0)
         result.dry_run = dry_run
@@ -79,7 +81,9 @@ def test_run_jobs_returns_zero_when_all_success(monkeypatch) -> None:
 def test_run_jobs_returns_one_when_any_failure(monkeypatch) -> None:
     config = _config(continue_on_error=True)
 
-    def fake_execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
+    def fake_execute_sync_job(
+        job: SyncJob, global_config: GlobalConfig, dry_run: bool = False, on_stats=None
+    ) -> JobRunResult:
         del global_config
         if job.name == "b":
             result = _result(job.name, succeeded=False, return_code=1)
@@ -104,7 +108,9 @@ def test_run_jobs_stops_when_continue_on_error_is_false(monkeypatch) -> None:
     config = _config(continue_on_error=False)
     called_jobs: list[str] = []
 
-    def fake_execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
+    def fake_execute_sync_job(
+        job: SyncJob, global_config: GlobalConfig, dry_run: bool = False, on_stats=None
+    ) -> JobRunResult:
         del global_config
         called_jobs.append(job.name)
         if job.name == "b":
@@ -131,7 +137,9 @@ def test_run_jobs_calls_notifier(monkeypatch) -> None:
     config = _config(continue_on_error=True)
     notifier = DummyNotifier()
 
-    def fake_execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
+    def fake_execute_sync_job(
+        job: SyncJob, global_config: GlobalConfig, dry_run: bool = False, on_stats=None
+    ) -> JobRunResult:
         del global_config
         result = _result(job.name, succeeded=True, return_code=0)
         result.dry_run = dry_run
@@ -150,7 +158,9 @@ def test_run_jobs_calls_notifier(monkeypatch) -> None:
 def test_run_jobs_sets_summary_dry_run_when_enabled(monkeypatch) -> None:
     config = _config(continue_on_error=True)
 
-    def fake_execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
+    def fake_execute_sync_job(
+        job: SyncJob, global_config: GlobalConfig, dry_run: bool = False, on_stats=None
+    ) -> JobRunResult:
         del global_config
         result = _result(job.name, succeeded=True, return_code=0)
         result.dry_run = dry_run

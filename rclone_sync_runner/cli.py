@@ -4,17 +4,19 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from typing import Any
 
 import typer
-from rich.console import Console
 from rich.table import Table
+from rich.console import Console
 
-from .config import ConfigError, build_runner_config, load_config, render_config_yaml
-from .discovery import list_rclone_dirs, match_folder_pairs
-from .logging_setup import setup_logging
+from .config import ConfigError, load_config, render_config_yaml, build_runner_config
 from .models import RunSummary, RunnerConfig
-from .notifiers import LoggingNotifier, Notifier, TelegramNotifier
 from .runner import run_jobs
+from .discovery import list_rclone_dirs, match_folder_pairs
+from .notifiers import Notifier, LoggingNotifier, TelegramNotifier
+from .formatting import stats_value, format_bytes
+from .logging_setup import setup_logging
 
 
 LOGGER = logging.getLogger(__name__)
@@ -46,32 +48,83 @@ def _build_notifiers(config: RunnerConfig) -> list[Notifier]:
     return notifiers
 
 
+def _format_ongoing_progress(job_name: str, stats: dict[str, Any], active: int) -> str:
+    """Format a Rich markup string for an in-progress stats update.
+
+    Args:
+        job_name (str): Name of the running job.
+        stats (dict[str, Any]): rclone stats payload.
+        active (int): Number of files currently transferring.
+
+    Returns:
+        str: Rich markup progress line.
+    """
+    done_bytes = int(stats_value(stats, "bytes"))
+    total_bytes = int(stats_value(stats, "totalBytes"))
+    pct = int(done_bytes / total_bytes * 100) if total_bytes > 0 else 0
+    raw_speed = stats.get("speed")
+    speed_str = (format_bytes(int(raw_speed)) + "/s") if isinstance(raw_speed, (int, float)) else "?/s"
+    eta = stats.get("eta")
+    eta_str = f"{int(eta)}s" if isinstance(eta, (int, float)) else "?"
+    errors = stats_value(stats, "errors")
+    return (
+        f"  [cyan]{job_name}[/cyan]  "
+        f"{format_bytes(done_bytes)}/{format_bytes(total_bytes)} ({pct}%)  "
+        f"speed={speed_str}  eta={eta_str}  active={active}  errors={errors}"
+    )
+
+
+def _format_finished_progress(job_name: str, stats: dict[str, Any]) -> str:
+    """Format a Rich markup string for a completed-job stats update.
+
+    Args:
+        job_name (str): Name of the finished job.
+        stats (dict[str, Any]): rclone stats payload.
+
+    Returns:
+        str: Rich markup progress line.
+    """
+    transferred = format_bytes(int(stats_value(stats, "bytes")))
+    transfers = stats_value(stats, "transfers")
+    deletes = stats_value(stats, "deletes")
+    checks = stats_value(stats, "checks")
+    errors = stats_value(stats, "errors")
+    elapsed = stats.get("elapsedTime")
+    elapsed_str = f"{elapsed:.1f}s" if isinstance(elapsed, (int, float)) else "?"
+    return (
+        f"  [green]{job_name}[/green]  "
+        f"transferred={transferred}  transfers={transfers}  deletes={deletes}  "
+        f"checks={checks}  errors={errors}  elapsed={elapsed_str}"
+    )
+
+
+def _build_progress_callback(console: Console):
+    """Return a stats callback that prints a compact progress line via Rich.
+
+    Args:
+        console (Console): Rich console to write progress output to.
+
+    Returns:
+        Callable[[str, dict[str, Any]], None]: Callback accepting
+            ``(job_name, stats_dict)`` and printing a formatted progress line.
+    """
+
+    def _on_stats(job_name: str, stats: dict[str, Any]) -> None:
+        transferring = stats.get("transferring")
+        if isinstance(transferring, list) and len(transferring) > 0:
+            console.print(_format_ongoing_progress(job_name, stats, len(transferring)))
+        else:
+            console.print(_format_finished_progress(job_name, stats))
+
+    return _on_stats
+
+
 def _render_summary(summary: RunSummary) -> None:
     """Render a run summary table using Rich.
 
     Args:
         summary (RunSummary): The completed run summary to display.
     """
-
-    def _stats_value(last_stats: dict[str, object] | None, key: str) -> str:
-        """Get a numeric stats value from last_stats with a safe fallback.
-
-        Args:
-            last_stats (dict[str, object] | None): rclone stats payload, or None if unavailable.
-            key (str): Stats field name to retrieve.
-
-        Returns:
-            str: Integer string representation of the value, or ``"0"`` if absent or non-numeric.
-        """
-        if not last_stats:
-            return "0"
-
-        value = last_stats.get(key)
-        if isinstance(value, bool):
-            return "0"
-        if isinstance(value, int | float):
-            return str(int(value))
-        return "0"
 
     console = Console()
     # Ensure a minimum width for the summary, especially for systemd logs
@@ -83,7 +136,7 @@ def _render_summary(summary: RunSummary) -> None:
     table.add_column("Transfers")
     table.add_column("Deletes")
     table.add_column("Checks")
-    table.add_column("Bytes")
+    table.add_column("Transferred")
     table.add_column("Status")
     table.add_column("Ret Code")
     table.add_column("Duration(s)")
@@ -93,10 +146,10 @@ def _render_summary(summary: RunSummary) -> None:
         status = "OK" if result.succeeded else "FAILED"
         table.add_row(
             result.job_name,
-            _stats_value(result.last_stats, "transfers"),
-            _stats_value(result.last_stats, "deletes"),
-            _stats_value(result.last_stats, "checks"),
-            _stats_value(result.last_stats, "bytes"),
+            stats_value(result.last_stats, "transfers"),
+            stats_value(result.last_stats, "deletes"),
+            stats_value(result.last_stats, "checks"),
+            format_bytes(int(stats_value(result.last_stats, "bytes"))),
             status,
             str(result.return_code),
             f"{result.duration_seconds:.2f}",
@@ -135,12 +188,19 @@ def run(
         "-n",
         help="Preview operations without making changes.",
     ),
+    progress: bool = typer.Option(
+        False,
+        "--progress",
+        "-p",
+        help="Print live stats updates during each job.",
+    ),
 ) -> None:
     """Execute all configured jobs sequentially.
 
     Args:
         config (Path): Path to YAML config file.
         dry_run (bool): Preview operations without making changes.
+        progress (bool): Print live stats updates during each job.
     """
     setup_logging("INFO")
 
@@ -154,8 +214,15 @@ def run(
     if dry_run:
         LOGGER.info("Running in dry-run mode; no changes will be applied.")
 
+    on_stats = _build_progress_callback(Console()) if progress else None
+
     try:
-        summary, exit_code = run_jobs(config=parsed_config, notifiers=_build_notifiers(parsed_config), dry_run=dry_run)
+        summary, exit_code = run_jobs(
+            config=parsed_config,
+            notifiers=_build_notifiers(parsed_config),
+            dry_run=dry_run,
+            on_stats=on_stats,
+        )
     except Exception:
         LOGGER.exception("Unexpected runtime orchestration failure")
         raise typer.Exit(code=2) from None
