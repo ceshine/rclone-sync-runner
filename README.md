@@ -58,7 +58,43 @@ notifications:
 
 Refer to [configs/example.yml](configs/example.yml) for a more complete example.
 
-## Run
+## Folder Discovery
+
+The `discovery` command helps bootstrap a sync config by finding matching folder
+pairs across two rclone remotes. It lists the immediate children of `FOLDER_A`
+and searches `FOLDER_B` recursively (up to `--max-depth`) for subdirectories
+with the same name.
+
+```bash
+uv run rclone-sync-runner discovery FOLDER_A FOLDER_B
+```
+
+Example — match top-level folders in a local path against a cloud remote:
+
+```bash
+uv run rclone-sync-runner discovery /data/photos gdrive:Backups --max-depth 2 --output draft.yaml
+```
+
+For each folder found in `FOLDER_A`:
+
+- **MATCH** — exactly one matching name found in `FOLDER_B`; a sync job is emitted.
+- **SKIP (no match)** — no folder with that name exists anywhere in `FOLDER_B`.
+- **SKIP (ambiguous)** — two or more folders with that name were found; review manually.
+
+The generated `draft.yaml` is a valid (but incomplete) `RunnerConfig` that you
+can edit before using with `rclone-sync-runner run`.
+
+Options:
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--max-depth` | `-d` | `3` | Maximum search depth inside `FOLDER_B` |
+| `--output` | `-o` | `draft.yaml` | Output path for the generated YAML config |
+| `--rclone-bin` | | `rclone` | Path or name of the rclone binary |
+
+## Running Sync Jobs
+
+The `run` command executes all sync jobs defined in a YAML config file sequentially.
 
 ```bash
 uv run rclone-sync-runner run --config configs/sync.yaml
@@ -70,7 +106,14 @@ Preview without making remote changes:
 uv run rclone-sync-runner run --config configs/sync.yaml --dry-run
 ```
 
-`--dry-run` (or `-n`) must be set at the CLI level and is rejected in both `global.extra_args` and per-job `extra_args`.
+Options:
+
+| Flag | Short | Default | Description |
+|------|-------|---------|-------------|
+| `--config` | `-c` | *(required)* | Path to the YAML config file |
+| `--dry-run` | `-n` | `false` | Pass `--dry-run` to rclone without writing any changes |
+
+`--dry-run` must be set at the CLI level and is rejected in both `global.extra_args` and per-job `extra_args`.
 
 The CLI prints a summary table and exits with:
 
