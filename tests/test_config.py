@@ -167,6 +167,51 @@ notifications:
         load_config(config_path)
 
 
+def test_load_config_accepts_global_extra_args(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path / "global_extra_args.yaml",
+        """
+version: 1
+global:
+  log_level: INFO
+  extra_args:
+    - --fast-list
+    - --transfers
+    - "8"
+jobs:
+  - name: docs
+    source: /data/docs
+    destination: remote:docs
+""",
+    )
+
+    config = load_config(config_path)
+
+    assert config.global_config.extra_args == ["--fast-list", "--transfers", "8"]
+    assert config.jobs[0].extra_args is None
+
+
+@pytest.mark.parametrize("dry_run_arg", ["-n", "--dry-run", "--dry-run=true"])
+def test_load_config_rejects_dry_run_flags_in_global_extra_args(tmp_path: Path, dry_run_arg: str) -> None:
+    config_path = _write_config(
+        tmp_path / "invalid_global_dry_run.yaml",
+        f"""
+version: 1
+global:
+  log_level: INFO
+  extra_args:
+    - {dry_run_arg}
+jobs:
+  - name: docs
+    source: /data/docs
+    destination: remote:docs
+""",
+    )
+
+    with pytest.raises(ConfigError, match="Do not set '-n' or '--dry-run'"):
+        load_config(config_path)
+
+
 @pytest.mark.parametrize("dry_run_arg", ["-n", "--dry-run", "--dry-run=true"])
 def test_load_config_rejects_dry_run_flags_in_extra_args(tmp_path: Path, dry_run_arg: str) -> None:
     config_path = _write_config(

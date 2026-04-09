@@ -32,15 +32,21 @@ global:
   rclone_bin: rclone
   log_level: INFO
   continue_on_error: true
+  # extra_args applied to every job unless a job overrides them:
+  extra_args:
+    - --fast-list
 jobs:
   - name: photos
     source: /data/photos
     destination: remote:photos
+    # Overrides global extra_args for this job:
     extra_args:
       - --delete-during
   - name: docs
     source: /data/docs
     destination: remote:docs
+    # Omit extra_args (or set to null) to inherit global extra_args.
+    # Set extra_args: [] to explicitly suppress global extra_args.
 notifications:
   telegram:
     bot_token: "123456789:replace_with_real_token"
@@ -64,7 +70,7 @@ Preview without making remote changes:
 uv run rclone-sync-runner run --config configs/sync.yaml --dry-run
 ```
 
-`--dry-run` (or `-n`) must be set at the CLI level and is rejected in per-job `extra_args`.
+`--dry-run` (or `-n`) must be set at the CLI level and is rejected in both `global.extra_args` and per-job `extra_args`.
 
 The CLI prints a summary table and exits with:
 

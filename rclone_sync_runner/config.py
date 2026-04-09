@@ -25,7 +25,7 @@ def render_config_yaml(config: RunnerConfig) -> str:
         str: A YAML-formatted string representation of the configuration.
             The ``notifications`` block is omitted when no Telegram config is set.
     """
-    data = config.model_dump(mode="json", by_alias=True)
+    data = config.model_dump(mode="json", by_alias=True, exclude_none=True)
 
     # Strip the notifications block when it carries no real config
     if config.notifications.telegram is None:

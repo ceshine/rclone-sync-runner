@@ -28,6 +28,35 @@ def test_build_rclone_sync_command_includes_required_flags() -> None:
     assert command[-1] == "--fast-list"
 
 
+def test_build_rclone_sync_command_job_inherits_global_extra_args() -> None:
+    job = SyncJob(name="docs", source="/src/docs", destination="remote:docs")
+    global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO", extra_args=["--fast-list"])
+
+    command = build_rclone_sync_command(job=job, global_config=global_config)
+
+    assert "--fast-list" in command
+
+
+def test_build_rclone_sync_command_job_extra_args_override_global() -> None:
+    job = SyncJob(name="docs", source="/src/docs", destination="remote:docs", extra_args=["--transfers", "2"])
+    global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO", extra_args=["--fast-list"])
+
+    command = build_rclone_sync_command(job=job, global_config=global_config)
+
+    assert "--transfers" in command
+    assert "2" in command
+    assert "--fast-list" not in command
+
+
+def test_build_rclone_sync_command_job_empty_extra_args_suppresses_global() -> None:
+    job = SyncJob(name="docs", source="/src/docs", destination="remote:docs", extra_args=[])
+    global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO", extra_args=["--fast-list"])
+
+    command = build_rclone_sync_command(job=job, global_config=global_config)
+
+    assert "--fast-list" not in command
+
+
 def test_build_rclone_sync_command_includes_dry_run_flag_when_enabled() -> None:
     job = SyncJob(
         name="docs",

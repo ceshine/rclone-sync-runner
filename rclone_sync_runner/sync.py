@@ -50,7 +50,8 @@ def build_rclone_sync_command(job: SyncJob, global_config: GlobalConfig, dry_run
         "--stats-log-level",
         "INFO",
     ]
-    command.extend(job.extra_args)
+    effective_extra_args = job.extra_args if job.extra_args is not None else global_config.extra_args
+    command.extend(effective_extra_args)
     if dry_run:
         command.append("--dry-run")
     return command
