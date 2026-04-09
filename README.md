@@ -93,3 +93,11 @@ uvx ruff check .
 uvx ruff format --line-length 120
 uv run pytest
 ```
+
+## Acknowledgments
+
+- The [AGENTS.md](./AGENTS.md) was adapted from the example in this blog post: [Getting Good Results from Claude Code](https://www.dzombak.com/blog/2025/08/getting-good-results-from-claude-code/).
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
