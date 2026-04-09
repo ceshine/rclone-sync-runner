@@ -9,7 +9,8 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from .config import ConfigError, load_config
+from .config import ConfigError, build_runner_config, load_config, render_config_yaml
+from .discovery import list_rclone_dirs, match_folder_pairs
 from .logging_setup import setup_logging
 from .models import RunSummary, RunnerConfig
 from .notifiers import LoggingNotifier, Notifier, TelegramNotifier
@@ -21,7 +22,14 @@ TYPER_APP = typer.Typer(help="Run sequential rclone sync jobs from YAML configur
 
 
 def _build_notifiers(config: RunnerConfig) -> list[Notifier]:
-    """Build notifier instances from validated config."""
+    """Build notifier instances from validated config.
+
+    Args:
+        config (RunnerConfig): Validated runner configuration.
+
+    Returns:
+        list[Notifier]: Active notifier instances derived from the config.
+    """
     notifiers: list[Notifier] = [LoggingNotifier()]
 
     telegram_config = config.notifications.telegram
@@ -39,10 +47,22 @@ def _build_notifiers(config: RunnerConfig) -> list[Notifier]:
 
 
 def _render_summary(summary: RunSummary) -> None:
-    """Render a run summary table using Rich."""
+    """Render a run summary table using Rich.
+
+    Args:
+        summary (RunSummary): The completed run summary to display.
+    """
 
     def _stats_value(last_stats: dict[str, object] | None, key: str) -> str:
-        """Get a numeric stats value from last_stats with a safe fallback."""
+        """Get a numeric stats value from last_stats with a safe fallback.
+
+        Args:
+            last_stats (dict[str, object] | None): rclone stats payload, or None if unavailable.
+            key (str): Stats field name to retrieve.
+
+        Returns:
+            str: Integer string representation of the value, or ``"0"`` if absent or non-numeric.
+        """
         if not last_stats:
             return "0"
 
@@ -116,7 +136,12 @@ def run(
         help="Preview operations without making changes.",
     ),
 ) -> None:
-    """Execute all configured jobs sequentially."""
+    """Execute all configured jobs sequentially.
+
+    Args:
+        config (Path): Path to YAML config file.
+        dry_run (bool): Preview operations without making changes.
+    """
     setup_logging("INFO")
 
     try:
@@ -137,6 +162,71 @@ def run(
 
     _render_summary(summary)
     raise typer.Exit(code=exit_code)
+
+
+@TYPER_APP.command()
+def discovery(
+    folder_a: str = typer.Argument(..., help="rclone path for folder A (e.g. 'gdrive:Movies')."),
+    folder_b: str = typer.Argument(..., help="rclone path to search for matching subfolders."),
+    max_depth: int = typer.Option(
+        3,
+        "--max-depth",
+        "-d",
+        help="Maximum search depth inside Folder B (1 = immediate children only).",
+        min=1,
+    ),
+    output: Path = typer.Option(
+        Path("draft.yaml"),
+        "--output",
+        "-o",
+        help="Output path for the generated draft YAML config file.",
+    ),
+    rclone_bin: str = typer.Option(
+        "rclone",
+        "--rclone-bin",
+        help="Path or name of the rclone binary.",
+    ),
+) -> None:
+    """Discover matching remote folder pairs and generate a draft sync config.
+
+    Args:
+        folder_a (str): rclone path for folder A (source root).
+        folder_b (str): rclone path to search for matching subfolders.
+        max_depth (int): Maximum search depth inside folder B.
+        output (Path): Output path for the generated draft YAML config file.
+        rclone_bin (str): Path or name of the rclone binary.
+    """
+    console = Console()
+    console.print(f"[bold]Discovering folder pairs...[/bold]  (max depth: {max_depth})")
+    console.print(f"  Folder A: {folder_a}")
+    console.print(f"  Folder B: {folder_b}\n")
+
+    try:
+        folder_a_items = list_rclone_dirs(rclone_bin, folder_a, recursive=False, max_depth=1)
+        folder_b_items = list_rclone_dirs(rclone_bin, folder_b, recursive=True, max_depth=max_depth)
+    except RuntimeError as error:
+        console.print(f"[bold red]Error:[/bold red] {error}")
+        raise typer.Exit(code=1) from error
+
+    if not folder_a_items:
+        console.print("[yellow]No subdirectories found in Folder A. No config file written.[/yellow]")
+        raise typer.Exit(code=0)
+
+    console.print(f"Found [bold]{len(folder_a_items)}[/bold] subdirectories in Folder A.\n")
+
+    jobs = match_folder_pairs(folder_a_items, folder_b_items, folder_a, folder_b, console)
+
+    if not jobs:
+        console.print("\n[yellow]No matching pairs discovered. No config file written.[/yellow]")
+        raise typer.Exit(code=0)
+
+    config = build_runner_config(jobs)
+    yaml_text = render_config_yaml(config)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    _ = output.write_text(yaml_text, encoding="utf-8")
+
+    console.print(f"\n[bold green]Config written:[/bold green] {output}  ({len(jobs)} pair(s))")
 
 
 def main() -> None:

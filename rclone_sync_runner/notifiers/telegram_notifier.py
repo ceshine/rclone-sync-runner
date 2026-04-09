@@ -32,11 +32,11 @@ class TelegramNotifier:
         """Initialize the Telegram notifier.
 
         Args:
-            bot_token: Telegram bot token.
-            chat_id: Target chat ID.
-            message_thread_id: Optional thread/topic identifier.
-            disable_notification: Send message silently when true.
-            timeout_seconds: Bot API request timeout in seconds.
+            bot_token (str): Telegram bot token.
+            chat_id (str): Target chat ID.
+            message_thread_id (int | None): Optional thread/topic identifier.
+            disable_notification (bool): Send message silently when true.
+            timeout_seconds (float): Bot API request timeout in seconds.
         """
         self._bot_token = bot_token
         self._chat_id = chat_id
@@ -48,7 +48,7 @@ class TelegramNotifier:
         """Send a run summary message to Telegram.
 
         Args:
-            summary: Run summary object.
+            summary (RunSummary): Run summary object.
         """
         try:
             asyncio.run(
@@ -63,7 +63,12 @@ class TelegramNotifier:
             LOGGER.warning("Telegram notification failed: %s", error)
 
     async def _send_message(self, text: str, message_thread_id: int | None) -> None:
-        """Send a message through python-telegram-bot."""
+        """Send a message through python-telegram-bot.
+
+        Args:
+            text (str): Markdown-formatted message body.
+            message_thread_id (int | None): Thread or topic ID, or None for the main chat.
+        """
         async with Bot(token=self._bot_token) as bot:
             _ = await bot.send_message(
                 chat_id=self._chat_id,
@@ -79,7 +84,15 @@ class TelegramNotifier:
 
     @staticmethod
     def _stats_number(last_stats: dict[str, object] | None, key: str) -> float:
-        """Get a numeric value from rclone stats with safe fallback."""
+        """Get a numeric value from rclone stats with safe fallback.
+
+        Args:
+            last_stats (dict[str, object] | None): rclone stats payload, or None if unavailable.
+            key (str): Stats field name to retrieve.
+
+        Returns:
+            float: Numeric value for the key, or ``0.0`` if absent or non-numeric.
+        """
         if not last_stats:
             return 0.0
 
@@ -92,7 +105,15 @@ class TelegramNotifier:
 
     @classmethod
     def _aggregated_totals(cls, summary: RunSummary) -> dict[str, float]:
-        """Aggregate numeric values from all job last_stats payloads."""
+        """Aggregate numeric values from all job last_stats payloads.
+
+        Args:
+            summary (RunSummary): The completed run summary containing job results.
+
+        Returns:
+            dict[str, float]: Summed totals keyed by stat name
+                (``transfers``, ``deletes``, ``checks``, ``bytes``, ``duration_seconds``).
+        """
         totals = {
             "transfers": 0.0,
             "deletes": 0.0,
@@ -112,12 +133,26 @@ class TelegramNotifier:
 
     @staticmethod
     def _markdown_text(value: str) -> str:
-        """Escape user-provided data for Telegram Markdown parsing."""
+        """Escape user-provided data for Telegram Markdown parsing.
+
+        Args:
+            value (str): Raw string to escape.
+
+        Returns:
+            str: Telegram Markdown v1-safe escaped string.
+        """
         return escape_markdown(value, version=1)
 
     @classmethod
     def _build_message(cls, summary: RunSummary) -> str:
-        """Build a markdown-formatted run summary message."""
+        """Build a markdown-formatted run summary message.
+
+        Args:
+            summary (RunSummary): The completed run summary to format.
+
+        Returns:
+            str: Telegram Markdown v1-formatted message string.
+        """
         status = "SUCCEEDED" if summary.failed_jobs == 0 else "FAILED"
         mode = "dry-run" if summary.dry_run else "live"
         config_name_line = f"- config name: {cls._markdown_text(summary.global_name)}\n" if summary.global_name else ""

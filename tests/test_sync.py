@@ -1,9 +1,9 @@
-"""Tests for rclone subprocess command construction and log parsing."""
+"""Tests for sync job command construction and log parsing."""
 
 from __future__ import annotations
 
 from rclone_sync_runner.models import GlobalConfig, SyncJob
-from rclone_sync_runner.rclone_subprocess import (
+from rclone_sync_runner.sync import (
     build_rclone_sync_command,
     execute_sync_job,
     parse_rclone_stderr_line,
@@ -104,7 +104,7 @@ def test_execute_sync_job_collects_error_samples_and_stats(monkeypatch) -> None:
             return_code=1,
         )
 
-    monkeypatch.setattr("rclone_sync_runner.rclone_subprocess.subprocess.Popen", fake_popen)
+    monkeypatch.setattr("rclone_sync_runner.sync.subprocess.Popen", fake_popen)
 
     result = execute_sync_job(job=job, global_config=global_config, dry_run=True)
 

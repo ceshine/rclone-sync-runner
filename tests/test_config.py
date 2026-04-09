@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from rclone_sync_runner.config import ConfigError, load_config
+from rclone_sync_runner.config import ConfigError, build_runner_config, load_config, render_config_yaml
+from rclone_sync_runner.models import SyncJob
 
 
 def _write_config(path: Path, content: str) -> Path:
@@ -185,3 +186,45 @@ jobs:
 
     with pytest.raises(ConfigError, match="Do not set '-n' or '--dry-run'"):
         load_config(config_path)
+
+
+# ---------------------------------------------------------------------------
+# render_config_yaml
+# ---------------------------------------------------------------------------
+
+
+def test_render_config_yaml_uses_global_alias() -> None:
+    config = build_runner_config([SyncJob(name="j", source="/a", destination="/b")])
+
+    yaml_text = render_config_yaml(config)
+
+    assert "global:" in yaml_text
+    assert "global_config:" not in yaml_text
+
+
+def test_render_config_yaml_omits_empty_notifications() -> None:
+    config = build_runner_config([SyncJob(name="j", source="/a", destination="/b")])
+
+    yaml_text = render_config_yaml(config)
+
+    assert "telegram" not in yaml_text
+    assert "notifications" not in yaml_text
+
+
+def test_render_config_yaml_round_trips_through_load_config(tmp_path: Path) -> None:
+    jobs = [
+        SyncJob(name="alpha", source="gdrive:A/alpha", destination="gdrive:B/alpha"),
+        SyncJob(name="beta", source="gdrive:A/beta", destination="gdrive:B/beta"),
+    ]
+    config = build_runner_config(jobs)
+    yaml_text = render_config_yaml(config)
+
+    config_file = tmp_path / "draft.yaml"
+    config_file.write_text(yaml_text, encoding="utf-8")
+
+    loaded = load_config(config_file)
+
+    assert loaded.version == 1
+    assert len(loaded.jobs) == 2
+    assert loaded.jobs[0].name == "alpha"
+    assert loaded.jobs[1].name == "beta"

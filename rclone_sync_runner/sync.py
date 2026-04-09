@@ -1,4 +1,4 @@
-"""Subprocess integration for running rclone sync jobs."""
+"""Sync job execution via rclone subprocess."""
 
 from __future__ import annotations
 
@@ -30,12 +30,12 @@ def build_rclone_sync_command(job: SyncJob, global_config: GlobalConfig, dry_run
     """Build an rclone sync command for a job.
 
     Args:
-        job: Job definition.
-        global_config: Global config values.
-        dry_run: Whether to append rclone dry-run mode.
+        job (SyncJob): Job definition.
+        global_config (GlobalConfig): Global config values.
+        dry_run (bool): Whether to append rclone dry-run mode.
 
     Returns:
-        Command argument list for subprocess execution.
+        list[str]: Command argument list for subprocess execution.
     """
     command = [
         global_config.rclone_bin,
@@ -60,10 +60,10 @@ def parse_rclone_stderr_line(line: str) -> ParsedLogLine:
     """Parse one stderr line from rclone JSON logs.
 
     Args:
-        line: Raw stderr line.
+        line (str): Raw stderr line.
 
     Returns:
-        Parsed line with stats and/or error details when available.
+        ParsedLogLine: Parsed line with stats and/or error details when available.
     """
     sanitized_line = line.strip()
     if not sanitized_line:
@@ -101,12 +101,12 @@ def execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = 
     """Execute one sync job and collect structured results.
 
     Args:
-        job: Job definition.
-        global_config: Global config values.
-        dry_run: Whether to run the job with rclone dry-run enabled.
+        job (SyncJob): Job definition.
+        global_config (GlobalConfig): Global config values.
+        dry_run (bool): Whether to run the job with rclone dry-run enabled.
 
     Returns:
-        Job execution result.
+        JobRunResult: Job execution result.
 
     Raises:
         RuntimeError: If subprocess could not be started.

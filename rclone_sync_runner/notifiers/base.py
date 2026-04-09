@@ -11,4 +11,8 @@ class Notifier(Protocol):
     """Protocol for run-finished notification hooks."""
 
     def on_run_finished(self, summary: RunSummary) -> None:
-        """Handle run completion event."""
+        """Handle run completion event.
+
+        Args:
+            summary (RunSummary): The completed run summary.
+        """

@@ -9,7 +9,7 @@ def setup_logging(level: str) -> None:
     """Configure process-wide logging.
 
     Args:
-        level: Logging level name.
+        level (str): Logging level name.
     """
     resolved_level = getattr(logging, level.upper(), logging.INFO)
     logging.basicConfig(

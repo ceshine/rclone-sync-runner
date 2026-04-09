@@ -8,7 +8,7 @@ from typing import Sequence
 
 from rclone_sync_runner.models import JobRunResult, RunSummary, RunnerConfig
 from rclone_sync_runner.notifiers.base import Notifier
-from rclone_sync_runner.rclone_subprocess import execute_sync_job
+from rclone_sync_runner.sync import execute_sync_job
 
 LOGGER = logging.getLogger(__name__)
 
@@ -21,12 +21,12 @@ def run_jobs(
     """Execute jobs sequentially and produce a run summary.
 
     Args:
-        config: Validated runner config.
-        notifiers: Optional notifier hooks called on run completion.
-        dry_run: Whether to run all jobs in rclone dry-run mode.
+        config (RunnerConfig): Validated runner config.
+        notifiers (Sequence[Notifier] | None): Optional notifier hooks called on run completion.
+        dry_run (bool): Whether to run all jobs in rclone dry-run mode.
 
     Returns:
-        A tuple of run summary and process exit code.
+        tuple[RunSummary, int]: A tuple of run summary and process exit code.
     """
     run_started_at = datetime.now(UTC)
     results: list[JobRunResult] = []
