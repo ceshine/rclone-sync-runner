@@ -16,7 +16,7 @@ class LoggingNotifier:
         """Log run-level completion details.
 
         Args:
-            summary: Run summary object.
+            summary (RunSummary): Run summary object.
         """
         LOGGER.info(
             "Run finished: mode=%s total=%s succeeded=%s failed=%s duration=%.2fs",

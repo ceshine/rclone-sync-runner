@@ -15,6 +15,7 @@ class GlobalConfig(BaseModel):
     rclone_bin: str = "rclone"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"] = "INFO"
     continue_on_error: bool = True
+    extra_args: list[str] = Field(default_factory=list)
 
 
 class SyncJob(BaseModel):
@@ -23,7 +24,7 @@ class SyncJob(BaseModel):
     name: str
     source: str
     destination: str
-    extra_args: list[str] = Field(default_factory=list)
+    extra_args: list[str] | None = None
 
 
 class TelegramNotificationConfig(BaseModel):
@@ -70,9 +71,15 @@ class RunnerConfig(BaseModel):
             duplicates = ", ".join(sorted(duplicate_names))
             raise ValueError(f"Duplicate job names are not allowed: {duplicates}")
 
+        if any(arg == "-n" or arg.startswith("--dry-run") for arg in self.global_config.extra_args):
+            raise ValueError(
+                "Do not set '-n' or '--dry-run' in global extra_args. Use the CLI '--dry-run/-n' option instead."
+            )
+
         jobs_with_disallowed_flags: set[str] = set()
         for job in self.jobs:
-            if any(arg == "-n" or arg.startswith("--dry-run") for arg in job.extra_args):
+            job_args = job.extra_args or []
+            if any(arg == "-n" or arg.startswith("--dry-run") for arg in job_args):
                 jobs_with_disallowed_flags.add(job.name)
 
         if jobs_with_disallowed_flags:

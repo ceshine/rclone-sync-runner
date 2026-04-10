@@ -1,9 +1,9 @@
-"""Tests for rclone subprocess command construction and log parsing."""
+"""Tests for sync job command construction and log parsing."""
 
 from __future__ import annotations
 
 from rclone_sync_runner.models import GlobalConfig, SyncJob
-from rclone_sync_runner.rclone_subprocess import (
+from rclone_sync_runner.sync import (
     build_rclone_sync_command,
     execute_sync_job,
     parse_rclone_stderr_line,
@@ -26,6 +26,35 @@ def test_build_rclone_sync_command_includes_required_flags() -> None:
     assert "--stats" in command
     assert "30s" in command
     assert command[-1] == "--fast-list"
+
+
+def test_build_rclone_sync_command_job_inherits_global_extra_args() -> None:
+    job = SyncJob(name="docs", source="/src/docs", destination="remote:docs")
+    global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO", extra_args=["--fast-list"])
+
+    command = build_rclone_sync_command(job=job, global_config=global_config)
+
+    assert "--fast-list" in command
+
+
+def test_build_rclone_sync_command_job_extra_args_override_global() -> None:
+    job = SyncJob(name="docs", source="/src/docs", destination="remote:docs", extra_args=["--transfers", "2"])
+    global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO", extra_args=["--fast-list"])
+
+    command = build_rclone_sync_command(job=job, global_config=global_config)
+
+    assert "--transfers" in command
+    assert "2" in command
+    assert "--fast-list" not in command
+
+
+def test_build_rclone_sync_command_job_empty_extra_args_suppresses_global() -> None:
+    job = SyncJob(name="docs", source="/src/docs", destination="remote:docs", extra_args=[])
+    global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO", extra_args=["--fast-list"])
+
+    command = build_rclone_sync_command(job=job, global_config=global_config)
+
+    assert "--fast-list" not in command
 
 
 def test_build_rclone_sync_command_includes_dry_run_flag_when_enabled() -> None:
@@ -104,7 +133,7 @@ def test_execute_sync_job_collects_error_samples_and_stats(monkeypatch) -> None:
             return_code=1,
         )
 
-    monkeypatch.setattr("rclone_sync_runner.rclone_subprocess.subprocess.Popen", fake_popen)
+    monkeypatch.setattr("rclone_sync_runner.sync.subprocess.Popen", fake_popen)
 
     result = execute_sync_job(job=job, global_config=global_config, dry_run=True)
 

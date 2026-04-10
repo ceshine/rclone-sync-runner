@@ -1,16 +1,16 @@
-"""Subprocess integration for running rclone sync jobs."""
+"""Sync job execution via rclone subprocess."""
 
 from __future__ import annotations
 
 import logging
 import subprocess
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Callable
 
 import orjson
 from pydantic import BaseModel
 
-from .models import GlobalConfig, JobRunResult, SyncJob
+from .models import SyncJob, GlobalConfig, JobRunResult
 
 LOGGER = logging.getLogger(__name__)
 
@@ -30,12 +30,12 @@ def build_rclone_sync_command(job: SyncJob, global_config: GlobalConfig, dry_run
     """Build an rclone sync command for a job.
 
     Args:
-        job: Job definition.
-        global_config: Global config values.
-        dry_run: Whether to append rclone dry-run mode.
+        job (SyncJob): Job definition.
+        global_config (GlobalConfig): Global config values.
+        dry_run (bool): Whether to append rclone dry-run mode.
 
     Returns:
-        Command argument list for subprocess execution.
+        list[str]: Command argument list for subprocess execution.
     """
     command = [
         global_config.rclone_bin,
@@ -50,7 +50,8 @@ def build_rclone_sync_command(job: SyncJob, global_config: GlobalConfig, dry_run
         "--stats-log-level",
         "INFO",
     ]
-    command.extend(job.extra_args)
+    effective_extra_args = job.extra_args if job.extra_args is not None else global_config.extra_args
+    command.extend(effective_extra_args)
     if dry_run:
         command.append("--dry-run")
     return command
@@ -60,10 +61,10 @@ def parse_rclone_stderr_line(line: str) -> ParsedLogLine:
     """Parse one stderr line from rclone JSON logs.
 
     Args:
-        line: Raw stderr line.
+        line (str): Raw stderr line.
 
     Returns:
-        Parsed line with stats and/or error details when available.
+        ParsedLogLine: Parsed line with stats and/or error details when available.
     """
     sanitized_line = line.strip()
     if not sanitized_line:
@@ -97,16 +98,23 @@ def parse_rclone_stderr_line(line: str) -> ParsedLogLine:
     )
 
 
-def execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = False) -> JobRunResult:
+def execute_sync_job(
+    job: SyncJob,
+    global_config: GlobalConfig,
+    dry_run: bool = False,
+    on_stats: Callable[[str, dict[str, Any]], None] | None = None,
+) -> JobRunResult:
     """Execute one sync job and collect structured results.
 
     Args:
-        job: Job definition.
-        global_config: Global config values.
-        dry_run: Whether to run the job with rclone dry-run enabled.
+        job (SyncJob): Job definition.
+        global_config (GlobalConfig): Global config values.
+        dry_run (bool): Whether to run the job with rclone dry-run enabled.
+        on_stats (Callable[[str, dict[str, Any]], None] | None): Optional callback
+            invoked on each rclone stats update, receiving ``(job_name, stats_dict)``.
 
     Returns:
-        Job execution result.
+        JobRunResult: Job execution result.
 
     Raises:
         RuntimeError: If subprocess could not be started.
@@ -152,7 +160,9 @@ def execute_sync_job(job: SyncJob, global_config: GlobalConfig, dry_run: bool = 
 
         if parsed_line.stats is not None:
             last_stats = parsed_line.stats
-            LOGGER.info("Job '%s' stats update: %s", job.name, parsed_line.stats)
+            LOGGER.debug("Job '%s' stats update: %s", job.name, parsed_line.stats)
+            if on_stats is not None:
+                on_stats(job.name, parsed_line.stats)
 
         if parsed_line.error_message:
             error_count += 1

@@ -12,3 +12,9 @@ wheels/
 cache
 configs/
 opencode.json
+
+*.yaml
+
+.codex
+.claude
+.gemini
