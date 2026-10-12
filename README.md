@@ -60,19 +60,19 @@ Refer to [configs/example.yml](configs/example.yml) for a more complete example.
 
 ## Folder Discovery
 
-The `discovery` command helps bootstrap a sync config by finding matching folder
+The `discover` command helps bootstrap a sync config by finding matching folder
 pairs across two rclone remotes. It lists the immediate children of `FOLDER_A`
 and searches `FOLDER_B` recursively (up to `--max-depth`) for subdirectories
 with the same name.
 
 ```bash
-uv run rclone-sync-runner discovery FOLDER_A FOLDER_B
+uv run rclone-sync-runner discover FOLDER_A FOLDER_B
 ```
 
 Example — match top-level folders in a local path against a cloud remote:
 
 ```bash
-uv run rclone-sync-runner discovery /data/photos gdrive:Backups --max-depth 2 --output draft.yaml
+uv run rclone-sync-runner discover /data/photos gdrive:Backups --max-depth 2 --output draft.yaml
 ```
 
 For each folder found in `FOLDER_A`:

@@ -232,7 +232,7 @@ def run(
 
 
 @TYPER_APP.command()
-def discovery(
+def discover(
     folder_a: str = typer.Argument(..., help="rclone path for folder A (e.g. 'gdrive:Movies')."),
     folder_b: str = typer.Argument(..., help="rclone path to search for matching subfolders."),
     max_depth: int = typer.Option(
