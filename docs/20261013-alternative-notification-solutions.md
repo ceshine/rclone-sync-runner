@@ -1,7 +1,7 @@
 # Alternative Notification Solutions
 
 - Date: 2026-10-13
-- Status: Decided: self-hosted ntfy on the GCP VM (see section 7)
+- Status: Decided: self-hosted ntfy on the GCP VM. Server deployed on 2026-10-13 (see section 7)
 - Scope: A new notifier for `rclone-sync-runner`, in addition to the Telegram notifier
 - Writing style: Most of this document uses ASD-STE100 (Simplified Technical English)
 
@@ -200,7 +200,7 @@ A dedicated notifier for the selected service is simpler and agrees with the cur
 ## 7. Next steps
 
 1. ~~Select ntfy or Gotify for the GCP VM.~~ Decision: self-hosted ntfy.
-2. Deploy the ntfy server with HTTPS, auth, `cache-file`, and `cache-duration`. A reference deployment is in [deploy/ntfy/](../deploy/ntfy/README.md).
+2. ~~Deploy the ntfy server with HTTPS, auth, `cache-file`, and `cache-duration`.~~ Done on 2026-10-13 at `https://ntfy.ceshine.net`, with the reference deployment in [deploy/ntfy/](../deploy/ntfy/README.md). The web app gets messages. The Android app and the desktop CLI are not tested yet.
 3. Implement the ntfy notifier and its tests.
 
 ## 8. References

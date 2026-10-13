@@ -20,7 +20,7 @@ For the compared options and the reasons for this choice, see [docs/20261013-alt
 | `NTFY_AUTH_DEFAULT_ACCESS` | `deny-all` | Anonymous users cannot read or write |
 | `NTFY_BEHIND_PROXY` | `true` | ntfy gets the client IP from the proxy headers, for rate limits. With the Cloudflare proxy, this is a Cloudflare IP (see [Operations](#operations)) |
 | `NTFY_ENABLE_LOGIN` | `true` | The web app shows a login form |
-| `mem_limit` | `64m` | Protects the other services on the e2-micro VM. ntfy uses about 15 MB |
+| `mem_limit` | `64m` | Protects the other services on the e2-micro VM. ntfy uses about 20 MB |
 | `GOMEMLIMIT` | `48MiB` | The Go garbage collector frees memory before the container reaches `mem_limit` |
 
 Access rules that `setup.sh` makes:
@@ -62,7 +62,7 @@ If the publisher token leaks, a person can send messages with it, but cannot rea
    ./setup.sh
    ```
 
-   The script asks for the password of the reader user. Then it prints the publisher token (`tk_...`). Put this token in the `rclone-sync-runner` config. Do not commit the token.
+   The script asks for the password of the reader user. Then it prints the publisher token (`tk_...`). Keep the token in a password manager, and put it in the `rclone-sync-runner` config when the ntfy notifier is available. Do not commit the token.
 
    You can run the script again. It does not change existing users, and it does not make a second token. To change the names, set environment variables, for example `NTFY_TOPIC=backups ./setup.sh`. See the header of `setup.sh` for all variables.
 
@@ -118,6 +118,7 @@ Use the user service, not the system service. The system service cannot show not
   docker compose start
   ```
 
+- **Reset the reader password:** `docker exec -it ntfy ntfy user change-pass ceshine`.
 - **Show tokens:** `docker exec ntfy ntfy token list rclone-runner`. This command shows the full token.
 - **Revoke the publisher access:** A token can make more tokens for its user. Thus, if a token leaks, removing only that token is not sufficient. Delete the user, then run `./setup.sh` again. The script makes the user, the permissions, and a new token again:
 
