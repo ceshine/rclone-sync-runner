@@ -62,7 +62,7 @@ If the publisher token leaks, a person can send messages with it, but cannot rea
    ./setup.sh
    ```
 
-   The script asks for the password of the reader user. Then it prints the publisher token (`tk_...`). Keep the token in a password manager, and put it in the `rclone-sync-runner` config when the ntfy notifier is available. Do not commit the token.
+   The script asks for the password of the reader user. Then it prints the publisher token (`tk_...`). Put this token in `notifications.ntfy.token` in the `rclone-sync-runner` config. Do not commit the token.
 
    You can run the script again. It does not change existing users, and it does not make a second token. To change the names, set environment variables, for example `NTFY_TOPIC=backups ./setup.sh`. See the header of `setup.sh` for all variables.
 

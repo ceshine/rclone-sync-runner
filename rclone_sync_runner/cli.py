@@ -14,7 +14,7 @@ from .config import ConfigError, load_config, render_config_yaml, build_runner_c
 from .models import RunSummary, RunnerConfig
 from .runner import run_jobs
 from .discovery import list_rclone_dirs, match_folder_pairs
-from .notifiers import Notifier, LoggingNotifier, TelegramNotifier
+from .notifiers import Notifier, NtfyNotifier, LoggingNotifier, TelegramNotifier
 from .formatting import stats_value, format_bytes
 from .logging_setup import setup_logging
 
@@ -42,6 +42,17 @@ def _build_notifiers(config: RunnerConfig) -> list[Notifier]:
                 chat_id=telegram_config.chat_id,
                 message_thread_id=telegram_config.message_thread_id,
                 disable_notification=telegram_config.disable_notification,
+            )
+        )
+
+    ntfy_config = config.notifications.ntfy
+    if ntfy_config is not None:
+        notifiers.append(
+            NtfyNotifier(
+                server_url=ntfy_config.server_url,
+                topic=ntfy_config.topic,
+                token=ntfy_config.token,
+                priority=ntfy_config.priority,
             )
         )
 

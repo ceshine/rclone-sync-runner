@@ -4,15 +4,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import final
 from string import Template
+from typing import final
 
 from telegram import Bot
-from telegram.constants import ParseMode
 from telegram.error import TelegramError
 from telegram.helpers import escape_markdown
+from telegram.constants import ParseMode
 
 from rclone_sync_runner.models import RunSummary
+from rclone_sync_runner.notifiers.summary import aggregate_job_stats
 
 LOGGER = logging.getLogger(__name__)
 
@@ -83,55 +84,6 @@ class TelegramNotifier:
             )
 
     @staticmethod
-    def _stats_number(last_stats: dict[str, object] | None, key: str) -> float:
-        """Get a numeric value from rclone stats with safe fallback.
-
-        Args:
-            last_stats (dict[str, object] | None): rclone stats payload, or None if unavailable.
-            key (str): Stats field name to retrieve.
-
-        Returns:
-            float: Numeric value for the key, or ``0.0`` if absent or non-numeric.
-        """
-        if not last_stats:
-            return 0.0
-
-        value = last_stats.get(key)
-        if isinstance(value, bool):
-            return 0.0
-        if isinstance(value, int | float):
-            return float(value)
-        return 0.0
-
-    @classmethod
-    def _aggregated_totals(cls, summary: RunSummary) -> dict[str, float]:
-        """Aggregate numeric values from all job last_stats payloads.
-
-        Args:
-            summary (RunSummary): The completed run summary containing job results.
-
-        Returns:
-            dict[str, float]: Summed totals keyed by stat name
-                (``transfers``, ``deletes``, ``checks``, ``bytes``, ``duration_seconds``).
-        """
-        totals = {
-            "transfers": 0.0,
-            "deletes": 0.0,
-            "checks": 0.0,
-            "bytes": 0.0,
-            "duration_seconds": 0.0,
-        }
-
-        for result in summary.results:
-            totals["transfers"] += cls._stats_number(result.last_stats, "transfers")
-            totals["deletes"] += cls._stats_number(result.last_stats, "deletes")
-            totals["checks"] += cls._stats_number(result.last_stats, "checks")
-            totals["bytes"] += cls._stats_number(result.last_stats, "bytes")
-            totals["duration_seconds"] += cls._stats_number(result.last_stats, "elapsedTime")
-
-        return totals
-
-    @staticmethod
     def _markdown_text(value: str) -> str:
         """Escape user-provided data for Telegram Markdown parsing.
 
@@ -162,7 +114,7 @@ class TelegramNotifier:
             if failed_job_names
             else cls._markdown_text("none")
         )
-        aggregated = cls._aggregated_totals(summary)
+        aggregated = aggregate_job_stats(summary)
 
         template = Template(
             (

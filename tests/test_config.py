@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from rclone_sync_runner.config import ConfigError, build_runner_config, load_config, render_config_yaml
+from rclone_sync_runner.config import ConfigError, load_config, render_config_yaml, build_runner_config
 from rclone_sync_runner.models import SyncJob
 
 
@@ -165,6 +165,116 @@ notifications:
 
     with pytest.raises(ConfigError, match="bot_token"):
         load_config(config_path)
+
+
+_NTFY_CONFIG_TEMPLATE = """
+version: 1
+global:
+  log_level: INFO
+jobs:
+  - name: docs
+    source: /data/docs
+    destination: remote:docs
+notifications:
+  ntfy:
+{ntfy_block}
+"""
+
+
+def test_load_config_accepts_ntfy_notifications(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path / "ntfy_notifications.yaml",
+        _NTFY_CONFIG_TEMPLATE.format(
+            ntfy_block=(
+                "    server_url: https://ntfy.example.com\n"
+                "    topic: rclone-sync\n"
+                "    token: tk_secret\n"
+                "    priority: 4"
+            )
+        ),
+    )
+
+    config = load_config(config_path)
+
+    assert config.notifications.ntfy is not None
+    assert config.notifications.ntfy.server_url == "https://ntfy.example.com"
+    assert config.notifications.ntfy.topic == "rclone-sync"
+    assert config.notifications.ntfy.token == "tk_secret"
+    assert config.notifications.ntfy.priority == 4
+
+
+def test_load_config_applies_ntfy_defaults(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path / "ntfy_defaults.yaml",
+        _NTFY_CONFIG_TEMPLATE.format(ntfy_block="    server_url: https://ntfy.sh\n    topic: rclone-sync"),
+    )
+
+    config = load_config(config_path)
+
+    assert config.notifications.ntfy is not None
+    assert config.notifications.ntfy.token is None
+    assert config.notifications.ntfy.priority == 3
+
+
+@pytest.mark.parametrize(
+    ("ntfy_block", "field_name"),
+    [
+        ("    server_url: ntfy.example.com\n    topic: rclone-sync", "server_url"),
+        ("    server_url: https://ntfy.example.com\n    topic: rclone/sync", "topic"),
+        ("    server_url: https://ntfy.example.com\n    topic: rclone-sync\n    token: ''", "token"),
+        ("    server_url: https://ntfy.example.com\n    topic: rclone-sync\n    priority: 6", "priority"),
+        ("    server_url: https://[::1\n    topic: rclone-sync", "server_url"),
+        ("    server_url: https://ntfy.example.com/?a=1\n    topic: rclone-sync", "server_url"),
+        ("    server_url: https://ntfy.example.com/#top\n    topic: rclone-sync", "server_url"),
+        ("    server_url: 'https://ntfy.example.com?'\n    topic: rclone-sync", "server_url"),
+        ("    server_url: 'https://ntfy.example.com#'\n    topic: rclone-sync", "server_url"),
+        ("    server_url: http://ntfy.example.com\n    topic: rclone-sync\n    token: tk_secret", "https"),
+    ],
+)
+def test_load_config_rejects_invalid_ntfy_values(tmp_path: Path, ntfy_block: str, field_name: str) -> None:
+    config_path = _write_config(
+        tmp_path / "invalid_ntfy_notifications.yaml",
+        _NTFY_CONFIG_TEMPLATE.format(ntfy_block=ntfy_block),
+    )
+
+    with pytest.raises(ConfigError, match=field_name):
+        load_config(config_path)
+
+
+@pytest.mark.parametrize(
+    "token_yaml",
+    [
+        # A block scalar keeps the trailing newline.
+        "    token: |\n      tk_secret",
+        "    token: tk_sécret",
+        "    token: secret",
+    ],
+)
+def test_load_config_rejects_malformed_ntfy_token_without_echoing_it(tmp_path: Path, token_yaml: str) -> None:
+    config_path = _write_config(
+        tmp_path / "malformed_ntfy_token.yaml",
+        _NTFY_CONFIG_TEMPLATE.format(
+            ntfy_block=f"    server_url: https://ntfy.example.com\n    topic: rclone-sync\n{token_yaml}"
+        ),
+    )
+
+    with pytest.raises(ConfigError, match="token") as error_info:
+        load_config(config_path)
+
+    assert "secret" not in str(error_info.value)
+    assert "sécret" not in str(error_info.value)
+
+
+def test_load_config_accepts_ntfy_http_url_without_token(tmp_path: Path) -> None:
+    config_path = _write_config(
+        tmp_path / "ntfy_http.yaml",
+        _NTFY_CONFIG_TEMPLATE.format(ntfy_block="    server_url: http://localhost:8080\n    topic: rclone-sync"),
+    )
+
+    config = load_config(config_path)
+
+    assert config.notifications.ntfy is not None
+    assert config.notifications.ntfy.server_url == "http://localhost:8080"
 
 
 def test_load_config_accepts_global_extra_args(tmp_path: Path) -> None:

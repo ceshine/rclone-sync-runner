@@ -201,7 +201,7 @@ A dedicated notifier for the selected service is simpler and agrees with the cur
 
 1. ~~Select ntfy or Gotify for the GCP VM.~~ Decision: self-hosted ntfy.
 2. ~~Deploy the ntfy server with HTTPS, auth, `cache-file`, and `cache-duration`.~~ Done on 2026-10-13 at `https://ntfy.ceshine.net`, with the reference deployment in [deploy/ntfy/](../deploy/ntfy/README.md). The web app gets messages. The Android app and the desktop CLI are not tested yet.
-3. Implement the ntfy notifier and its tests.
+3. ~~Implement the ntfy notifier and its tests.~~ Done: `NtfyNotifier` in `rclone_sync_runner/notifiers/ntfy_notifier.py`, with the `notifications.ntfy` config block.
 
 ## 8. References
 

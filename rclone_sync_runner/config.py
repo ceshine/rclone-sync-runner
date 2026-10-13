@@ -8,7 +8,7 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from .models import RunnerConfig, SyncJob
+from .models import SyncJob, RunnerConfig
 
 
 class ConfigError(RuntimeError):
@@ -23,12 +23,12 @@ def render_config_yaml(config: RunnerConfig) -> str:
 
     Returns:
         str: A YAML-formatted string representation of the configuration.
-            The ``notifications`` block is omitted when no Telegram config is set.
+            The ``notifications`` block is omitted when no notification channel is set.
     """
     data = config.model_dump(mode="json", by_alias=True, exclude_none=True)
 
-    # Strip the notifications block when it carries no real config
-    if config.notifications.telegram is None:
+    # Strip the notifications block when it carries no real config (exclude_none leaves it empty)
+    if not data.get("notifications"):
         data.pop("notifications", None)
 
     return yaml.dump(data, default_flow_style=False, sort_keys=False, allow_unicode=True)

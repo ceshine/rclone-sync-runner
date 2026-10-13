@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from rclone_sync_runner.cli import _build_notifiers, _format_ongoing_progress, _format_finished_progress
 from rclone_sync_runner.models import RunnerConfig
+from rclone_sync_runner.notifiers.ntfy_notifier import NtfyNotifier
 from rclone_sync_runner.notifiers.logging_notifier import LoggingNotifier
 from rclone_sync_runner.notifiers.telegram_notifier import TelegramNotifier
 
@@ -146,3 +147,26 @@ def test_build_notifiers_includes_telegram_notifier_when_configured() -> None:
     assert len(notifiers) == 2
     assert isinstance(notifiers[0], LoggingNotifier)
     assert isinstance(notifiers[1], TelegramNotifier)
+
+
+def test_build_notifiers_includes_ntfy_notifier_when_configured() -> None:
+    config = RunnerConfig.model_validate(
+        {
+            "version": 1,
+            "global": {"log_level": "INFO"},
+            "jobs": [{"name": "docs", "source": "/src", "destination": "remote:dst"}],
+            "notifications": {
+                "ntfy": {
+                    "server_url": "https://ntfy.example.com",
+                    "topic": "rclone-sync",
+                    "token": "tk_secret",
+                }
+            },
+        }
+    )
+
+    notifiers = _build_notifiers(config)
+
+    assert len(notifiers) == 2
+    assert isinstance(notifiers[0], LoggingNotifier)
+    assert isinstance(notifiers[1], NtfyNotifier)

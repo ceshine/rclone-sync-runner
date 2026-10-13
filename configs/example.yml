@@ -18,6 +18,14 @@ notifications:
     # Optional topic/thread ID for forum-enabled groups.
     # message_thread_id: 42
     disable_notification: false
+  # Optional ntfy notification after each run (see deploy/ntfy/ for a self-hosted server).
+  # ntfy:
+  #   server_url: https://ntfy.example.com
+  #   topic: rclone-sync
+  #   # Access token (tk_...) for servers with access control. Requires an https server_url:
+  #   token: "tk_replace_with_real_token"
+  #   # Priority from 1 (min) to 5 (max); default 3:
+  #   priority: 3
 
 jobs:
   - name: photos-to-backblaze

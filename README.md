@@ -54,6 +54,13 @@ notifications:
     # Optional for Telegram topics:
     # message_thread_id: 42
     disable_notification: false
+  ntfy:
+    server_url: https://ntfy.example.com
+    topic: rclone-sync
+    # Optional access token (tk_...) for servers with access control:
+    # token: "tk_replace_with_real_token"
+    # Optional priority from 1 (min) to 5 (max); default 3:
+    # priority: 3
 ```
 
 Refer to [configs/example.yml](configs/example.yml) for a more complete example.
@@ -135,6 +142,17 @@ uv run python scripts/telegram_get_chat_id.py --config configs/sync.yaml
 ```
 
 This helper reads `notifications.telegram` from the config and prints sender info, chat ID, and timestamp for the latest message sent to the bot. Because it validates with `RunnerConfig`, `notifications.telegram.chat_id` must exist in the config (a temporary dummy value is fine).
+
+### ntfy
+
+If `notifications.ntfy` is configured, the runner publishes a run summary to the configured [ntfy](https://ntfy.sh) topic when execution finishes. The ntfy Android app, the web app, and the ntfy CLI can receive it, and the server keeps the message history for clients that were offline.
+
+- `server_url` and `topic` are required. `token` is an access token (`tk_...`) for servers with access control. When `token` is set, `server_url` must use `https`, so that the token is not sent in plain text.
+- The title shows `SUCCEEDED` or `FAILED`, and the body uses Markdown. The body lists at most 20 failed jobs.
+- ntfy rejects message bodies of 4,096 bytes or more when the server has no attachment cache, so the runner truncates longer summaries.
+- A failed delivery logs a warning and does not change the exit code of the run.
+
+For a self-hosted server with access control and a 7-day message history, see [deploy/ntfy/](deploy/ntfy/README.md).
 
 ## Development
 
