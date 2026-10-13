@@ -1,0 +1,45 @@
+# ntfy server for rclone-sync-runner notifications.
+#
+# Reverse proxy and TLS: https://github.com/lucaslorentz/caddy-docker-proxy
+# (reads the `caddy` labels below; requires the external `caddy` network).
+# Users, permissions, and tokens are stored in the `ntfy_lib` volume, not in this file.
+# See README.md in this directory for setup steps.
+
+name: ntfy
+
+services:
+  ntfy:
+    image: binwiederhier/ntfy:v2.30.0
+    container_name: ntfy
+    command: serve
+    restart: unless-stopped
+    environment:
+      NTFY_BASE_URL: https://ntfy.ceshine.net
+      NTFY_BEHIND_PROXY: "true"
+      NTFY_CACHE_FILE: /var/cache/ntfy/cache.db
+      NTFY_CACHE_DURATION: 168h
+      NTFY_AUTH_FILE: /var/lib/ntfy/user.db
+      NTFY_AUTH_DEFAULT_ACCESS: deny-all
+      NTFY_ENABLE_LOGIN: "true"
+      # Soft limit below mem_limit, so the Go GC runs before the kernel kills the container.
+      GOMEMLIMIT: 48MiB
+    volumes:
+      - ntfy_cache:/var/cache/ntfy
+      - ntfy_lib:/var/lib/ntfy
+    mem_limit: 64m
+    labels:
+      caddy: ntfy.ceshine.net
+      caddy.reverse_proxy: "{{upstreams 80}}"
+    networks:
+      - caddy
+
+# Fixed names; without them Compose adds the project prefix (ntfy_ntfy_lib).
+volumes:
+  ntfy_cache:
+    name: ntfy_cache
+  ntfy_lib:
+    name: ntfy_lib
+
+networks:
+  caddy:
+    external: true
