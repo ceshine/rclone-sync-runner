@@ -117,20 +117,18 @@ class TelegramNotifier:
         aggregated = aggregate_job_stats(summary)
 
         template = Template(
-            (
-                "*rclone-sync-runner $status*\n\n"
-                "$runner_line"
-                "- mode: $mode\n"
-                "- successful jobs: $successful_jobs/$total_jobs\n"
-                "- failed jobs: $failed_jobs\n"
-                "- run duration: $run_duration\n\n"
-                "*Aggregated job stats*\n\n"
-                "- transfers: $transfers\n"
-                "- deletes: $deletes\n"
-                "- checks: $checks\n"
-                "- bytes: $bytes\n"
-                "- duration seconds: $duration_seconds"
-            )
+            "*rclone-sync-runner $status*\n\n"
+            "$runner_line"
+            "- mode: $mode\n"
+            "- successful jobs: $successful_jobs/$total_jobs\n"
+            "- failed jobs: $failed_jobs\n"
+            "- run duration: $run_duration\n\n"
+            "*Aggregated job stats*\n\n"
+            "- transfers: $transfers\n"
+            "- deletes: $deletes\n"
+            "- checks: $checks\n"
+            "- bytes: $bytes\n"
+            "- duration seconds: $duration_seconds"
         )
         return template.substitute(
             status=cls._markdown_text(status),

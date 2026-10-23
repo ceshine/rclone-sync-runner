@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Self
 
 from telegram.error import TelegramError
 
@@ -59,10 +60,10 @@ def test_telegram_notifier_sends_expected_payload(monkeypatch) -> None:
         def __init__(self, token: str) -> None:
             captured["token"] = token
 
-        async def __aenter__(self) -> _FakeBot:
+        async def __aenter__(self) -> Self:
             return self
 
-        async def __aexit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+        async def __aexit__(self, exc_type, exc_value, traceback) -> None:
             del exc_type, exc_value, traceback
 
         async def send_message(self, **kwargs: object) -> None:
@@ -133,10 +134,10 @@ def test_telegram_notifier_handles_network_errors(monkeypatch, caplog) -> None:
         def __init__(self, token: str) -> None:
             del token
 
-        async def __aenter__(self) -> _FailingBot:
+        async def __aenter__(self) -> Self:
             return self
 
-        async def __aexit__(self, exc_type, exc_value, traceback) -> None:  # noqa: ANN001
+        async def __aexit__(self, exc_type, exc_value, traceback) -> None:
             del exc_type, exc_value, traceback
 
         async def send_message(self, **kwargs: object) -> None:

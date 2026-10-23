@@ -169,14 +169,12 @@ def _render_summary(summary: RunSummary) -> None:
 
     console.print(table)
     console.print(
-        (
-            "Run totals: "
-            f"mode={'dry-run' if summary.dry_run else 'live'} "
-            f"total={summary.total_jobs} "
-            f"succeeded={summary.successful_jobs} "
-            f"failed={summary.failed_jobs} "
-            f"duration={summary.duration_seconds:.2f}s"
-        )
+        "Run totals: "
+        f"mode={'dry-run' if summary.dry_run else 'live'} "
+        f"total={summary.total_jobs} "
+        f"succeeded={summary.successful_jobs} "
+        f"failed={summary.failed_jobs} "
+        f"duration={summary.duration_seconds:.2f}s"
     )
 
 

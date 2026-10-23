@@ -138,11 +138,9 @@ class RunnerConfig(BaseModel):
         if jobs_with_disallowed_flags:
             job_names = ", ".join(sorted(jobs_with_disallowed_flags))
             raise ValueError(
-                (
-                    "Do not set '-n' or '--dry-run' in job extra_args. "
-                    "Use the CLI '--dry-run/-n' option instead. "
-                    f"Jobs: {job_names}"
-                )
+                "Do not set '-n' or '--dry-run' in job extra_args. "
+                "Use the CLI '--dry-run/-n' option instead. "
+                f"Jobs: {job_names}"
             )
 
         return self

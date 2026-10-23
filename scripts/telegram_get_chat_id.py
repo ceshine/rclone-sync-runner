@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from dataclasses import dataclass
-from datetime import timezone
+from datetime import UTC
 from pathlib import Path
 
 import typer
@@ -66,7 +66,7 @@ def _format_sender_info(message: Message) -> str:
 
 def _to_latest_message_info(message: Message) -> LatestMessageInfo:
     """Convert Telegram Message into display-friendly metadata."""
-    timestamp_utc = message.date.astimezone(timezone.utc).isoformat()
+    timestamp_utc = message.date.astimezone(UTC).isoformat()
     return LatestMessageInfo(
         sender_info=_format_sender_info(message),
         chat_id=str(message.chat.id),

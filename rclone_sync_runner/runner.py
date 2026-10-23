@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, Callable, Sequence
+from collections.abc import Callable, Sequence
+from typing import Any
 
 from rclone_sync_runner.sync import execute_sync_job
 from rclone_sync_runner.models import RunSummary, JobRunResult, RunnerConfig
