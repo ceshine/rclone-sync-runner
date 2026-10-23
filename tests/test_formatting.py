@@ -55,5 +55,5 @@ class TestStatsValue:
         assert stats_value({"eta": "soon"}, "eta") == "0"
 
     @pytest.mark.parametrize("value", [0, 0.0])
-    def test_zero_numeric_value(self, value: int | float) -> None:
+    def test_zero_numeric_value(self, value: float) -> None:
         assert stats_value({"bytes": value}, "bytes") == "0"

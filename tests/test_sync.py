@@ -122,7 +122,7 @@ def test_execute_sync_job_collects_error_samples_and_stats(monkeypatch) -> None:
     )
     global_config = GlobalConfig(rclone_bin="rclone", log_level="INFO")
 
-    def fake_popen(*args, **kwargs):  # noqa: ANN002, ANN003
+    def fake_popen(*args, **kwargs):
         del args, kwargs
         return FakeProcess(
             stderr_lines=[

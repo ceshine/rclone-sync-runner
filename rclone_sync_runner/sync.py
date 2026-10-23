@@ -5,7 +5,8 @@ from __future__ import annotations
 import logging
 import subprocess
 from datetime import UTC, datetime
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import orjson
 from pydantic import BaseModel

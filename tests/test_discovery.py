@@ -66,7 +66,7 @@ def test_build_lsjson_command_recursive() -> None:
 def test_list_rclone_dirs_success(monkeypatch) -> None:
     items = [{"Name": "foo", "Path": "foo", "IsDir": True}]
 
-    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN002, ANN003
+    def fake_run(cmd, **kwargs):
         return subprocess.CompletedProcess(cmd, returncode=0, stdout=json.dumps(items), stderr="")
 
     monkeypatch.setattr("rclone_sync_runner.discovery.subprocess.run", fake_run)
@@ -77,7 +77,7 @@ def test_list_rclone_dirs_success(monkeypatch) -> None:
 
 
 def test_list_rclone_dirs_empty_result(monkeypatch) -> None:
-    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN002, ANN003
+    def fake_run(cmd, **kwargs):
         return subprocess.CompletedProcess(cmd, returncode=0, stdout="[]", stderr="")
 
     monkeypatch.setattr("rclone_sync_runner.discovery.subprocess.run", fake_run)
@@ -88,7 +88,7 @@ def test_list_rclone_dirs_empty_result(monkeypatch) -> None:
 
 
 def test_list_rclone_dirs_raises_on_nonzero_returncode(monkeypatch) -> None:
-    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN002, ANN003
+    def fake_run(cmd, **kwargs):
         return subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr="permission denied")
 
     monkeypatch.setattr("rclone_sync_runner.discovery.subprocess.run", fake_run)
@@ -98,7 +98,7 @@ def test_list_rclone_dirs_raises_on_nonzero_returncode(monkeypatch) -> None:
 
 
 def test_list_rclone_dirs_raises_on_invalid_json(monkeypatch) -> None:
-    def fake_run(cmd, **kwargs):  # noqa: ANN001, ANN002, ANN003
+    def fake_run(cmd, **kwargs):
         return subprocess.CompletedProcess(cmd, returncode=0, stdout="not valid json", stderr="")
 
     monkeypatch.setattr("rclone_sync_runner.discovery.subprocess.run", fake_run)
